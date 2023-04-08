@@ -1,4 +1,4 @@
-import { prop, getModelForClass, pre } from "@typegoose/typegoose";
+import { prop, getModelForClass, pre, index } from "@typegoose/typegoose";
 import { Severity } from "@typegoose/typegoose/lib/internal/constants";
 import { modelOptions } from "@typegoose/typegoose/lib/modelOptions";
 import { v4 as uuidv4 } from "uuid";
@@ -13,6 +13,7 @@ import { DocumentType } from "@typegoose/typegoose/lib/types";
   this.password = hashedPassword;
   return;
 })
+@index({ email: 1 })
 @modelOptions({
   schemaOptions: {
     timestamps: true,
