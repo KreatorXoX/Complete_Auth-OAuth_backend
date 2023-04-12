@@ -1,9 +1,10 @@
 import { Response, Request, NextFunction } from "express";
 import bcrypt from "bcryptjs";
+import UserModel from "../model/user.model";
+import HttpError from "../model/http-error";
+import { loginUser } from "../service/auth.service";
 import { LoginUserInput, RegisterUserInput } from "../schema/auth.schema";
-import { loginUser, registerUser } from "../service/auth.service";
 import sendEmail from "../utils/mailer";
-import APIError from "../model/http-error";
 import { signJwt } from "../utils/jwt";
 
 export const registerUserHandler = async (
@@ -14,11 +15,11 @@ export const registerUserHandler = async (
   const message = "Invalid password or email! please check your credentials";
   const body = req.body;
 
-  const user = await registerUser(body);
-  if (!user) {
-    return next(new APIError("Registration Error", 401, message));
-  }
+  const user = await UserModel.create(body);
 
+  if (!user) {
+    return next(new HttpError(message, 401));
+  }
   const accessToken = signJwt(
     {
       UserInfo: {
@@ -48,6 +49,7 @@ export const registerUserHandler = async (
     text: `Verification code ${user.verificationCode}, Id:${user._id}`,
     html: `<a href="http://localhost:1337/api/users/verify/${user._id}/${user.verificationCode}">Click to Verify your Account</a>`,
   });
+
   res.json({ accessToken });
 };
 
@@ -60,18 +62,18 @@ export const loginUserHandler = async (
   const { email, password } = req.body;
 
   const user = await loginUser(email);
-  console.log(user);
+
   if (!user) {
-    return next(new APIError("Validation Error", 401, message));
+    return next(new HttpError(message, 401));
   }
 
   if (!user.verified) {
-    return next(new APIError("Verification Error", 401, "User not verified"));
+    return next(new HttpError("Verification Error", 401));
   }
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) {
-    return next(new APIError("Validation Error", 401, message));
+    return next(new HttpError(message, 401));
   }
 
   const accessToken = signJwt(

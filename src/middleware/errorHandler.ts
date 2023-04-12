@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import APIError from "../model/http-error";
 
 const errorHandler = (
-  err: Error,
+  err: any,
   req: Request,
   res: Response,
   next: NextFunction
@@ -10,14 +9,8 @@ const errorHandler = (
   if (res.headersSent) {
     return next(err);
   }
-
-  if (err instanceof APIError) {
-    res.status(err.httpCode);
-    res.json({ message: err.message });
-  } else {
-    res.status(500);
-    res.json({ message: "Internal server error" });
-  }
+  res.status(err.code ? (err.code === 11000 ? 400 : err.code) : 500);
+  res.json({ message: err.message || "An unknown error occurred!" });
 };
 
 export default errorHandler;

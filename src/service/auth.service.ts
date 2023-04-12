@@ -4,6 +4,6 @@ export function registerUser(input: Partial<User>) {
   return UserModel.create(input);
 }
 
-export async function loginUser(email: string) {
+export function loginUser(email: string) {
   return UserModel.findOne({ email: email }).exec();
 }

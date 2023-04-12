@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 import config from "config";
+import APIError from "../model/http-error";
+import HttpError from "../model/http-error";
 
 export function signJwt(
   object: Object,
@@ -13,14 +15,13 @@ export function signJwt(
 
   return jwt.sign(object, signingKey, {
     ...(options && options),
-    algorithm: "RS256",
   });
 }
 
 export function verifyJwt<T>(
   token: string,
   keyName: "accessTokenSecret" | "refreshTokenSecret"
-): T | null {
+): T | APIError {
   const publicKey = Buffer.from(config.get<string>(keyName), "base64").toString(
     "ascii"
   );
@@ -29,6 +30,6 @@ export function verifyJwt<T>(
     const decoded = jwt.verify(token, publicKey) as T;
     return decoded;
   } catch (e) {
-    return null;
+    return new HttpError("Jwt verify Error", 500);
   }
 }

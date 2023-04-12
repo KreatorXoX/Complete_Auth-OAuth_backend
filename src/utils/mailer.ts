@@ -30,7 +30,6 @@ async function sendEmail(payload: SendMailOptions) {
       console.log(err);
       return;
     }
-
     console.log(nodemailer.getTestMessageUrl(info));
   });
 }
