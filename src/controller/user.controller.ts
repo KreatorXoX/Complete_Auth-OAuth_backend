@@ -1,45 +1,13 @@
-import { Response, Request, NextFunction } from "express";
+import { Response, Request } from "express";
 import { v4 as uuidv4 } from "uuid";
 
 import {
-  CreateUserInput,
   ForgotPasswordInput,
   VerifyUserInput,
   ResetPasswordInput,
 } from "../schema/user.schema";
-import {
-  createUser,
-  findUserById,
-  findUserByMail,
-} from "../service/user.service";
+import { findUserById, findUserByMail } from "../service/user.service";
 import sendEmail from "../utils/mailer";
-
-export async function createUserHandler(
-  req: Request<{}, {}, CreateUserInput>,
-  res: Response,
-  next: NextFunction
-) {
-  const body = req.body;
-
-  try {
-    const user = await createUser(body);
-
-    await sendEmail({
-      from: "test@example.com",
-      to: user.email,
-      subject: "Please verify your account",
-      text: `Verification code ${user.verificationCode}, Id:${user._id}`,
-      html: `<a href="http://localhost:1337/api/users/verify/${user._id}/${user.verificationCode}">Click to Verify your Account</a>`,
-    });
-    return res.send("User created !");
-  } catch (error: any) {
-    if (error.code === 11000) {
-      // unique is violated
-      return res.status(409).send("Account already exists");
-    }
-    return res.status(500).send(error);
-  }
-}
 
 export async function verifyUserHandler(
   req: Request<VerifyUserInput>,

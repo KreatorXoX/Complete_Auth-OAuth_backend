@@ -45,6 +45,9 @@ export class User {
   @prop({ default: false })
   verified: boolean;
 
+  @prop({ default: false })
+  isAdmin: boolean;
+
   async validatePassword(this: DocumentType<User>, enteredPassword: string) {
     try {
       return await bcrypt.compare(enteredPassword, this.password);
