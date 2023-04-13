@@ -1,11 +1,11 @@
 import { Response, Request, NextFunction } from "express";
-import bcrypt from "bcryptjs";
-import UserModel from "../model/user.model";
+
 import HttpError from "../model/http-error";
-import { loginUser } from "../service/auth.service";
+import { loginUser, registerUser } from "../service/auth.service";
 import { LoginUserInput, RegisterUserInput } from "../schema/auth.schema";
 import sendEmail from "../utils/mailer";
-import { signJwt } from "../utils/jwt";
+import { signJwt, verifyJwt } from "../utils/jwt";
+import { findUserById } from "../service/user.service";
 
 export const registerUserHandler = async (
   req: Request<{}, {}, RegisterUserInput>,
@@ -15,7 +15,7 @@ export const registerUserHandler = async (
   const message = "Invalid password or email! please check your credentials";
   const body = req.body;
 
-  const user = await UserModel.create(body);
+  const user = await registerUser(body);
 
   if (!user) {
     return next(new HttpError(message, 401));
@@ -32,7 +32,7 @@ export const registerUserHandler = async (
     { expiresIn: "30m" }
   );
   const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
-    expiresIn: "7d",
+    expiresIn: "30s",
   });
 
   res.cookie("jwtToken", refreshToken, {
@@ -68,10 +68,12 @@ export const loginUserHandler = async (
   }
 
   if (!user.verified) {
-    return next(new HttpError("Verification Error", 401));
+    return next(
+      new HttpError("Verification Error - Please verify your account", 401)
+    );
   }
+  const match = await user.validatePassword(password);
 
-  const match = await bcrypt.compare(password, user.password);
   if (!match) {
     return next(new HttpError(message, 401));
   }
@@ -88,7 +90,7 @@ export const loginUserHandler = async (
     { expiresIn: "30m" }
   );
   const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
-    expiresIn: "7d",
+    expiresIn: "30s",
   });
 
   res.cookie("jwtToken", refreshToken, {
@@ -99,4 +101,66 @@ export const loginUserHandler = async (
   });
 
   res.json({ accessToken });
+};
+
+interface RefreshTokenType {
+  _id: string;
+  exp: number;
+  iat: number;
+}
+
+export const refreshUserHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwtToken) {
+    return next(new HttpError("Unauthorized", 401));
+  }
+
+  const refreshToken = cookies.jwtToken as string;
+
+  let decoded;
+  try {
+    decoded = verifyJwt<RefreshTokenType>(refreshToken, "refreshTokenSecret");
+  } catch (error) {
+    return next(new HttpError("Forbidden Route", 403));
+  }
+
+  const user = await findUserById(decoded._id);
+
+  if (!user) return next(new HttpError("Unauthorized", 401));
+
+  const accessToken = signJwt(
+    {
+      UserInfo: {
+        _id: user._id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      },
+    },
+    "accessTokenSecret",
+    { expiresIn: "30m" }
+  );
+
+  res.json({ accessToken });
+};
+
+export const logoutUserHandler = (req: Request, res: Response) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwtToken) {
+    return res.sendStatus(204);
+  }
+
+  res.clearCookie("jwtToken", {
+    httpOnly: true,
+    secure: false, // make it true when prod.
+    sameSite: "none",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.json({ message: "Cookies cleared" });
 };

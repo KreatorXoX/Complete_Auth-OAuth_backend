@@ -3,11 +3,14 @@ import express from "express";
 import validateSchema from "../middleware/validateSchema";
 import {
   loginUserHandler,
+  logoutUserHandler,
+  refreshUserHandler,
   registerUserHandler,
 } from "../controller/auth.controller";
 import { loginUserSchema, registerUserSchema } from "../schema/auth.schema";
 import asyncHandler from "express-async-handler";
-
+import loginLimiter from "../middleware/loginLimiter";
+import verifyJWT from "../middleware/verifyJWT";
 const router = express.Router();
 
 router.post(
@@ -18,7 +21,12 @@ router.post(
 
 router.post(
   "/api/auth/login",
+  loginLimiter,
   validateSchema(loginUserSchema),
   asyncHandler(loginUserHandler)
 );
+
+router.post("/api/auth/logout", logoutUserHandler);
+
+router.get("/api/auth/refresh", verifyJWT, asyncHandler(refreshUserHandler));
 export default router;

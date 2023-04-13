@@ -3,30 +3,43 @@ import {
   verifyUserHandler,
   forgotPasswordHandler,
   resetPasswordHandler,
+  findUserByIdHandler,
+  findAllUsers,
 } from "../controller/user.controller";
 import validateSchema from "../middleware/validateSchema";
 import {
   forgotPasswordSchema,
   verifyUserSchema,
   resetPasswordSchema,
+  findUserByIdSchema,
 } from "../schema/user.schema";
+import asyncHandler from "express-async-handler";
+import verifyJWT from "../middleware/verifyJWT";
 
 const router = express.Router();
+
+router.get("/api/users", verifyJWT, asyncHandler(findAllUsers));
+router.get(
+  "/api/user/:id",
+  verifyJWT,
+  validateSchema(findUserByIdSchema),
+  asyncHandler(findUserByIdHandler)
+);
 
 router.get(
   "/api/users/verify/:id/:verificationCode",
   validateSchema(verifyUserSchema),
-  verifyUserHandler
+  asyncHandler(verifyUserHandler)
 );
 router.post(
   "/api/users/forgot-password",
   validateSchema(forgotPasswordSchema),
-  forgotPasswordHandler
+  asyncHandler(forgotPasswordHandler)
 );
 router.get(
   "/api/users/reset-password/:id/:passwordResetCode",
   validateSchema(resetPasswordSchema),
-  resetPasswordHandler
+  asyncHandler(resetPasswordHandler)
 );
 
 export default router;
