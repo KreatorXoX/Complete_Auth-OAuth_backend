@@ -15,10 +15,11 @@ import {
 } from "../schema/user.schema";
 import asyncHandler from "express-async-handler";
 import verifyJWT from "../middleware/verifyJWT";
+import verifyAdmin from "../middleware/verifyAdmin";
 
 const router = express.Router();
 
-router.get("/api/users", verifyJWT, asyncHandler(findAllUsers));
+router.get("/api/users", verifyAdmin, asyncHandler(findAllUsers));
 router.get(
   "/api/user/:id",
   verifyJWT,

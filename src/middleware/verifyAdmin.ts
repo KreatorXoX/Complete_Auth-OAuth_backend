@@ -37,13 +37,10 @@ const verifyAdmin = (
       "accessTokenSecret"
     );
 
-    // Check if the user is an admin
     if (!decoded.UserInfo.isAdmin) {
-      // If the user is not an admin, throw a forbidden error
-      return res.status(403).json({
-        error: "Forbidden",
-        message: "You are not authorized to access this resource",
-      });
+      return next(
+        new HttpError("You are not authorized to access this resource", 403)
+      );
     }
 
     req.user = decoded.UserInfo._id;

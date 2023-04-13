@@ -32,17 +32,18 @@ export async function verifyUserHandler(
   }
 
   if (user.verified) {
-    res.send("User is already verified");
-    //return next(new HttpError("User is already verified", 204));
+    return next(new HttpError("User already verified", 400));
   }
 
-  if (user.verificationCode === verificationCode) {
-    user.verified = true;
-    await user.save();
-    res.send("User verified");
+  if (user.verificationCode !== verificationCode) {
+    return next(
+      new HttpError("Verification code does not match / expired", 400)
+    );
   }
 
-  res.send("Could not verify user");
+  user.verified = true;
+  await user.save();
+  res.send("User verified");
 }
 
 export async function forgotPasswordHandler(
@@ -111,11 +112,12 @@ export async function findAllUsers(
   const users = await getUsers();
 
   if (!users || users?.length < 1) {
-    return next(new HttpError("No user is available", 204));
+    return next(new HttpError("No user is available", 404));
   }
 
   res.json(users);
 }
+
 export async function findUserByIdHandler(
   req: Request<FindUserByIdInpupt, {}, {}>,
   res: Response,
