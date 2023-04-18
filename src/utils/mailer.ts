@@ -1,4 +1,4 @@
-import config from "config";
+import config from "../config/default";
 import nodemailer, { SendMailOptions } from "nodemailer";
 
 // this was for getting the test credentials
@@ -9,13 +9,7 @@ import nodemailer, { SendMailOptions } from "nodemailer";
 
 // createTestCreds();
 
-const stmp = config.get<{
-  user: string;
-  pass: string;
-  host: string;
-  port: number;
-  secure: boolean;
-}>("stmp");
+const stmp = config.stmp;
 
 const transporter = nodemailer.createTransport({
   ...stmp,
