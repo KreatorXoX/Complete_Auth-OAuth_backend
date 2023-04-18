@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 import { AnyZodObject } from "zod";
-import APIError from "../model/http-error";
+import HttpError from "../model/http-error";
 
 const validateSchema =
   (schema: AnyZodObject) =>
@@ -14,9 +14,7 @@ const validateSchema =
       });
       next();
     } catch (error: any) {
-      return next(
-        new APIError("Schema Validation Error", 409, `${error.message}`)
-      );
+      return next(new HttpError("Schema Validation Error", 409));
     }
   };
 

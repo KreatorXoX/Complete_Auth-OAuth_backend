@@ -10,7 +10,7 @@ import {
 import { loginUserSchema, registerUserSchema } from "../schema/auth.schema";
 import asyncHandler from "express-async-handler";
 import loginLimiter from "../middleware/loginLimiter";
-import verifyJWT from "../middleware/verifyJWT";
+
 const router = express.Router();
 
 router.post(
@@ -26,7 +26,7 @@ router.post(
   asyncHandler(loginUserHandler)
 );
 
-router.post("/api/auth/logout", logoutUserHandler);
+router.post("/api/auth/logout", asyncHandler(logoutUserHandler));
 
-router.get("/api/auth/refresh", verifyJWT, asyncHandler(refreshUserHandler));
+router.get("/api/auth/refresh", asyncHandler(refreshUserHandler));
 export default router;

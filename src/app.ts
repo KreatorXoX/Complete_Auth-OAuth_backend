@@ -6,12 +6,14 @@ import connectToDb from "./utils/connectToDb";
 import router from "./routes";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
+const PORT = process.env.PORT || config.get("PORT");
 const app = express();
-const PORT = config.get("PORT");
 
 connectToDb();
 
+app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
 app.use(express.json());
 

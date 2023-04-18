@@ -37,14 +37,14 @@ const verifyAdmin = (
       "accessTokenSecret"
     );
 
-    if (!decoded.UserInfo.isAdmin) {
+    if (!decoded?.UserInfo.isAdmin) {
       return next(
         new HttpError("You are not authorized to access this resource", 403)
       );
     }
 
-    req.user = decoded.UserInfo._id;
-    req.isAdmin = decoded.UserInfo.isAdmin;
+    // req.user = decoded.UserInfo._id;
+    // req.isAdmin = decoded.UserInfo.isAdmin;
     next();
   } catch (error) {
     return next(new HttpError("Forbidden", 403));

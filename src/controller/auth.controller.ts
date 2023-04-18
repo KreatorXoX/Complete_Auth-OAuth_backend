@@ -29,17 +29,17 @@ export const registerUserHandler = async (
       },
     },
     "accessTokenSecret",
-    { expiresIn: "30m" }
+    { expiresIn: "25s" }
   );
   const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
-    expiresIn: "30s",
+    expiresIn: "2m",
   });
 
-  res.cookie("jwtToken", refreshToken, {
+  res.cookie("myRefreshTokenCookie", refreshToken, {
     httpOnly: true,
-    secure: false, // make it true when prod.
+    secure: true, // make it true when prod.
     sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 2 * 60 * 1000,
   });
 
   await sendEmail({
@@ -47,7 +47,7 @@ export const registerUserHandler = async (
     to: user.email,
     subject: "Please verify your account",
     text: `Verification code ${user.verificationCode}, Id:${user._id}`,
-    html: `<a href="http://localhost:1337/api/users/verify/${user._id}/${user.verificationCode}">Click to Verify your Account</a>`,
+    html: `<a href="${process.env.BASE_URL}/users/verify/${user._id}/${user.verificationCode}">Click to Verify your Account</a>`,
   });
 
   res.json({ accessToken });
@@ -87,17 +87,17 @@ export const loginUserHandler = async (
       },
     },
     "accessTokenSecret",
-    { expiresIn: "30m" }
+    { expiresIn: "25s" }
   );
   const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
-    expiresIn: "30s",
+    expiresIn: "2m",
   });
 
-  res.cookie("jwtToken", refreshToken, {
+  res.cookie("myRefreshTokenCookie", refreshToken, {
     httpOnly: true,
-    secure: false, // make it true when prod.
+    secure: true, // make it true when prod.
     sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 2 * 60 * 1000,
   });
 
   res.json({ accessToken });
@@ -115,16 +115,16 @@ export const refreshUserHandler = async (
   next: NextFunction
 ) => {
   const cookies = req.cookies;
-
-  if (!cookies?.jwtToken) {
+  console.log(cookies);
+  if (!cookies?.myRefreshTokenCookie) {
     return next(new HttpError("Unauthorized", 401));
   }
 
-  const refreshToken = cookies.jwtToken as string;
+  const refreshToken = cookies.myRefreshTokenCookie as string;
 
   let decoded;
   try {
-    decoded = verifyJwt<RefreshTokenType>(refreshToken, "refreshTokenSecret");
+    decoded = verifyJwt<RefreshTokenType>(refreshToken, "refreshTokenSecret")!;
   } catch (error) {
     return next(new HttpError("Forbidden Route", 403));
   }
@@ -142,7 +142,7 @@ export const refreshUserHandler = async (
       },
     },
     "accessTokenSecret",
-    { expiresIn: "30m" }
+    { expiresIn: "25s" }
   );
 
   res.json({ accessToken });
@@ -151,15 +151,16 @@ export const refreshUserHandler = async (
 export const logoutUserHandler = (req: Request, res: Response) => {
   const cookies = req.cookies;
 
-  if (!cookies?.jwtToken) {
-    return res.sendStatus(204);
+  if (!cookies?.myRefreshTokenCookie) {
+    res.sendStatus(204);
+    return;
   }
 
-  res.clearCookie("jwtToken", {
+  res.clearCookie("myRefreshTokenCookie", {
     httpOnly: true,
-    secure: false, // make it true when prod.
+    secure: true, // make it true when prod.
     sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 2 * 60 * 1000,
   });
 
   res.json({ message: "Cookies cleared" });

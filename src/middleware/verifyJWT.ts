@@ -36,8 +36,8 @@ const verifyJWT = (
       accessToken,
       "accessTokenSecret"
     );
-    req.user = decoded.UserInfo._id;
-    req.isAdmin = decoded.UserInfo.isAdmin;
+    // req.user = decoded?.UserInfo._id;
+    // req.isAdmin = decoded?.UserInfo.isAdmin;
     next();
   } catch (error) {
     return next(new HttpError("Forbidden", 403));

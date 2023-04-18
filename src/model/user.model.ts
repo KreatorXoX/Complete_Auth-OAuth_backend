@@ -45,7 +45,7 @@ export class User {
   @prop({ default: false })
   verified: boolean;
 
-  @prop({ default: false })
+  @prop({ default: true })
   isAdmin: boolean;
 
   async validatePassword(this: DocumentType<User>, enteredPassword: string) {

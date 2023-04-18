@@ -1,17 +1,12 @@
 import jwt from "jsonwebtoken";
 import config from "config";
 
-import HttpError from "../model/http-error";
-
 export function signJwt(
   object: Object,
   keyName: "accessTokenSecret" | "refreshTokenSecret",
   options?: jwt.SignOptions | undefined
 ) {
-  const signingKey = Buffer.from(
-    config.get<string>(keyName),
-    "base64"
-  ).toString("ascii");
+  const signingKey = config.get<string>(keyName);
 
   return jwt.sign(object, signingKey, {
     ...(options && options),
@@ -21,15 +16,13 @@ export function signJwt(
 export function verifyJwt<T>(
   token: string,
   keyName: "accessTokenSecret" | "refreshTokenSecret"
-): T {
-  const publicKey = Buffer.from(config.get<string>(keyName), "base64").toString(
-    "ascii"
-  );
+): T | null {
+  const verifyKey = config.get<string>(keyName);
 
   try {
-    const decoded = jwt.verify(token, publicKey) as T;
+    const decoded = jwt.verify(token, verifyKey) as T;
     return decoded;
   } catch (e) {
-    throw new HttpError("Jwt verify Error", 500);
+    return null;
   }
 }
