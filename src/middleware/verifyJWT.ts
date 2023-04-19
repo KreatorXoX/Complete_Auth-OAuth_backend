@@ -36,6 +36,11 @@ const verifyJWT = (
       accessToken,
       "accessTokenSecret"
     );
+    if (!decoded) {
+      return next(
+        new HttpError("You are not authorized to access this resource", 403)
+      );
+    }
     // req.user = decoded?.UserInfo._id;
     // req.isAdmin = decoded?.UserInfo.isAdmin;
     next();
