@@ -8,9 +8,10 @@ import {
   FindUserByIdInpupt,
 } from "../schema/user.schema";
 import {
+  findAllUsers,
   findUserById,
+  findUserByIdForClient,
   findUserByMail,
-  getUsers,
 } from "../service/user.service";
 import sendEmail from "../utils/mailer";
 import HttpError from "../model/http-error";
@@ -22,8 +23,6 @@ export async function verifyUserHandler(
 ) {
   const id = req.params.id;
   const verificationCode = req.params.verificationCode;
-
-  // find the user by id and check to see if they are already verified
 
   const user = await findUserById(id);
 
@@ -43,7 +42,13 @@ export async function verifyUserHandler(
 
   user.verified = true;
   await user.save();
-  res.send("User verified");
+  res.send(`
+   <div>
+        <h2>User Verified</h2>
+        <br />
+        <a href=${process.env.CLIENT_BASE_URL}>click to go to the site</a>
+      </div>
+  `);
 }
 
 export async function forgotPasswordHandler(
@@ -75,6 +80,7 @@ export async function forgotPasswordHandler(
     from: "text@example.com",
     subject: "Reset your password",
     text: `Password reset link : ${passwordResetCode} ${user._id}`,
+    html: `<a href="${process.env.CLIENT_BASE_URL}/reset-password/${user._id}/${user.passwordResetCode}">Click to Reset your Password</a>`,
   });
 
   res.send(message);
@@ -89,7 +95,6 @@ export async function resetPasswordHandler(
   const { password } = req.body;
 
   const user = await findUserById(id);
-
   if (
     !user ||
     !user.passwordResetCode ||
@@ -104,12 +109,12 @@ export async function resetPasswordHandler(
   res.send("Successfully updated the password");
 }
 
-export async function findAllUsers(
+export async function findAllUsersHandler(
   req: Request<{}, {}, {}>,
   res: Response,
   next: NextFunction
 ) {
-  const users = await getUsers();
+  const users = await findAllUsers();
 
   if (!users || users?.length < 1) {
     return next(new HttpError("No user is available", 404));
@@ -118,14 +123,14 @@ export async function findAllUsers(
   res.json(users);
 }
 
-export async function findUserByIdHandler(
+export async function findUserByIdForClientHandler(
   req: Request<FindUserByIdInpupt, {}, {}>,
   res: Response,
   next: NextFunction
 ) {
   const { id } = req.params;
 
-  const user = await findUserById(id);
+  const user = await findUserByIdForClient(id);
 
   if (!user) {
     return next(new HttpError("User not found", 404));

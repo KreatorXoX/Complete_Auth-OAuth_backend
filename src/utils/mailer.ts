@@ -9,13 +9,14 @@ import nodemailer, { SendMailOptions } from "nodemailer";
 
 // createTestCreds();
 
-const stmp = config.stmp;
+// use the smtp constant for testing purposes.
+// const smtp = config.smtp;
 
 const transporter = nodemailer.createTransport({
-  ...stmp,
+  service: process.env.NODEMAILER_SERVICE!,
   auth: {
-    user: stmp.user,
-    pass: stmp.pass,
+    user: process.env.NODEMAILER_USER!,
+    pass: process.env.NODEMAILER_PASS!,
   },
 });
 async function sendEmail(payload: SendMailOptions) {

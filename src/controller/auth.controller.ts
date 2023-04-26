@@ -115,7 +115,7 @@ export const refreshUserHandler = async (
   next: NextFunction
 ) => {
   const cookies = req.cookies;
-  console.log(cookies);
+
   if (!cookies?.myRefreshTokenCookie) {
     return next(new HttpError("Unauthorized", 401));
   }

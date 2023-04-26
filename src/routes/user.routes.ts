@@ -3,8 +3,8 @@ import {
   verifyUserHandler,
   forgotPasswordHandler,
   resetPasswordHandler,
-  findUserByIdHandler,
-  findAllUsers,
+  findAllUsersHandler,
+  findUserByIdForClientHandler,
 } from "../controller/user.controller";
 import validateSchema from "../middleware/validateSchema";
 import {
@@ -19,12 +19,12 @@ import verifyAdmin from "../middleware/verifyAdmin";
 
 const router = express.Router();
 
-router.get("/api/users", verifyAdmin, asyncHandler(findAllUsers));
+router.get("/api/users", verifyAdmin, asyncHandler(findAllUsersHandler));
 router.get(
   "/api/user/:id",
   verifyJWT,
   validateSchema(findUserByIdSchema),
-  asyncHandler(findUserByIdHandler)
+  asyncHandler(findUserByIdForClientHandler)
 );
 
 router.get(
@@ -37,7 +37,7 @@ router.post(
   validateSchema(forgotPasswordSchema),
   asyncHandler(forgotPasswordHandler)
 );
-router.get(
+router.post(
   "/api/users/reset-password/:id/:passwordResetCode",
   validateSchema(resetPasswordSchema),
   asyncHandler(resetPasswordHandler)
