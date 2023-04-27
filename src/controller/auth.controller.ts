@@ -1,11 +1,15 @@
 import { Response, Request, NextFunction } from "express";
-
+import jwt, { JwtPayload } from "jsonwebtoken";
 import HttpError from "../model/http-error";
 import { loginUser, registerUser } from "../service/auth.service";
 import { LoginUserInput, RegisterUserInput } from "../schema/auth.schema";
 import sendEmail from "../utils/mailer";
 import { signJwt, verifyJwt } from "../utils/jwt";
-import { findUserById } from "../service/user.service";
+import {
+  findAndUpdateUser,
+  findUserById,
+  getGoogleOAuthTokens,
+} from "../service/user.service";
 
 export const registerUserHandler = async (
   req: Request<{}, {}, RegisterUserInput>,
@@ -20,27 +24,27 @@ export const registerUserHandler = async (
   if (!user) {
     return next(new HttpError(message, 401));
   }
-  const accessToken = signJwt(
-    {
-      UserInfo: {
-        _id: user._id,
-        email: user.email,
-        isAdmin: user.isAdmin,
-      },
-    },
-    "accessTokenSecret",
-    { expiresIn: "25s" }
-  );
-  const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
-    expiresIn: "2m",
-  });
+  // const accessToken = signJwt(
+  //   {
+  //     UserInfo: {
+  //       _id: user._id,
+  //       email: user.email,
+  //       isAdmin: user.isAdmin,
+  //     },
+  //   },
+  //   "accessTokenSecret",
+  //   { expiresIn: "25s" }
+  // );
+  // const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
+  //   expiresIn: "2m",
+  // });
 
-  res.cookie("myRefreshTokenCookie", refreshToken, {
-    httpOnly: true,
-    secure: true, // make it true when prod.
-    sameSite: "none",
-    maxAge: 2 * 60 * 1000,
-  });
+  // res.cookie("myRefreshTokenCookie", refreshToken, {
+  //   httpOnly: true,
+  //   secure: true, // make it true when prod.
+  //   sameSite: "none",
+  //   maxAge: 2 * 60 * 1000,
+  // });
 
   await sendEmail({
     from: "test@example.com",
@@ -50,7 +54,8 @@ export const registerUserHandler = async (
     html: `<a href="${process.env.BASE_URL}/users/verify/${user._id}/${user.verificationCode}">Click to Verify your Account</a>`,
   });
 
-  res.json({ accessToken });
+  //res.json({ accessToken });
+  res.status(200).json({ message: "Please verify your account now!" });
 };
 
 export const loginUserHandler = async (
@@ -164,4 +169,87 @@ export const logoutUserHandler = (req: Request, res: Response) => {
   });
 
   res.json({ message: "Cookies cleared" });
+};
+
+interface GoogleUser {
+  iss: string;
+  azp: string;
+  aud: string;
+  sub: string;
+  email: string;
+  email_verified: boolean;
+  at_hash: string;
+  name: string;
+  picture: string;
+  given_name: string;
+  family_name: string;
+  locale: string;
+  iat: Number;
+  exp: Number;
+}
+export const googleOAuthHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const code = req.query.code as string;
+
+    const { id_token } = await getGoogleOAuthTokens({ code });
+
+    const decodedUser = jwt.decode(id_token) as JwtPayload & GoogleUser;
+
+    if (!decodedUser.email_verified) {
+      return next(new HttpError("Account is not verified", 400));
+    }
+
+    const user = await findAndUpdateUser(
+      {
+        email: decodedUser.email,
+      },
+      {
+        email: decodedUser.email,
+        firstName: decodedUser.given_name || decodedUser.name.split(" ")[0],
+        lastName: decodedUser.family_name || decodedUser.name.split(" ")[1],
+        verified: true,
+        isAdmin: false,
+      },
+      {
+        upsert: true,
+        new: true,
+      }
+    );
+
+    if (!user) {
+      return next(new HttpError("Error registering the google user", 400));
+    }
+    const accessToken = signJwt(
+      {
+        UserInfo: {
+          _id: user._id,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
+      },
+      "accessTokenSecret",
+      { expiresIn: "25s" }
+    );
+    const refreshToken = signJwt({ _id: user._id }, "refreshTokenSecret", {
+      expiresIn: "2m",
+    });
+
+    res.cookie("myRefreshTokenCookie", refreshToken, {
+      httpOnly: true,
+      secure: true, // make it true when prod.
+      sameSite: "none",
+      maxAge: 2 * 60 * 1000,
+    });
+
+    res.redirect(
+      `${process.env.CLIENT_BASE_URL!}/oauth/success?accessToken=${accessToken}`
+    );
+  } catch (error) {
+    console.log(error);
+    res.redirect(`${process.env.CLIENT_BASE_URL!}/oauth/error`);
+  }
 };
